@@ -22,7 +22,15 @@ public class MapGenerator3 : MonoBehaviour
   [Range(0,10)]
   public int squareSize;
 
+  [Range(0,10)]
+  public int borderWidth;
+
   int[,] map;
+
+  int xmin;
+  int ymin;
+  int xmax;
+  int ymax;
 
   void Start()
   {
@@ -31,11 +39,15 @@ public class MapGenerator3 : MonoBehaviour
 
   void GenerateMap()
   {
-    map = new int[width, height];
+    xmin = borderWidth;
+    xmax = borderWidth + width - 1;
+    ymin = borderWidth;
+    ymax = borderWidth + height - 1;
+
+    map = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
 
     RandomFillMap();
     SmoothMap();
-    AddMapBorder();
 
     MeshGenerator meshGenerator = GetComponent<MeshGenerator>();
     meshGenerator.GenerateMesh(map, squareSize);
@@ -50,26 +62,24 @@ public class MapGenerator3 : MonoBehaviour
 
     System.Random pseudoRandom = new System.Random(seed.GetHashCode());
 
-    for(int x = 0; x < width; x++)
+    bool isInBorder(int x, int y)
     {
-      for(int y = 0; y < width; y++)
-      {
-        map[x,y] = (pseudoRandom.Next(0,100) < randomFillPercent) ? 1 : 0;
-      }
+      return x < xmin || y < ymin || x > xmax || y > ymax;
     }
-  }
 
-  void AddMapBorder()
-  {
-    for(int x = 0; x < width; x++)
+    for(int x = 0; x < map.GetLength(0); x++)
     {
-      map[x,0] = 1;
-      map[x,height - 1] = 1;
-    }
-    for(int y = 0; y < height; y++)
-    {
-      map[0,y] = 1;
-      map[width - 1,y] = 1;
+      for(int y = 0; y < map.GetLength(1); y++)
+      {
+        if(isInBorder(x, y))
+        {
+          map[x,y] = 1;
+        }
+        else
+        {
+          map[x,y] = (pseudoRandom.Next(0,100) < randomFillPercent) ? 1 : 0;
+        }
+      }
     }
   }
 
@@ -77,9 +87,9 @@ public class MapGenerator3 : MonoBehaviour
   {
     for (int i = 0; i < smoothingAmount; i ++)
     {
-      for(int x = 0; x < width; x++)
+      for(int x = xmin; x <= xmax; x++)
       {
-        for(int y = 0; y < width; y++)
+        for(int y = ymin; y < ymax; y++)
         {
           int surroundingWallCount = GetSurroundingWallCount(x,y);
 
@@ -115,6 +125,6 @@ public class MapGenerator3 : MonoBehaviour
   void OnDrawGizmos()
   {
     // This makes the viewport live, the start method is responsible for the mesh used by the game
-    // GenerateMap();
+    GenerateMap();
   }
 }
