@@ -19,6 +19,12 @@ public class MapGenerator3 : MonoBehaviour
   [Range(0,10)]
   public int smoothingTolerance;
 
+  [Range(0,50)]
+  public int floorDenoisingTolerance;
+
+  [Range(0,50)]
+  public int wallDenoisingTolerance;
+
   [Range(0,10)]
   public int squareSize;
 
@@ -31,6 +37,12 @@ public class MapGenerator3 : MonoBehaviour
   int ymin;
   int xmax;
   int ymax;
+
+  void OnDrawGizmos()
+  {
+    // This makes the viewport live, the start method is responsible for the mesh used by the game
+    GenerateMap();
+  }
 
   void Start()
   {
@@ -48,6 +60,8 @@ public class MapGenerator3 : MonoBehaviour
 
     RandomFillMap();
     SmoothMap();
+    DenoiseMap(1, wallDenoisingTolerance);
+    DenoiseMap(0, floorDenoisingTolerance);
 
     MeshGenerator meshGenerator = GetComponent<MeshGenerator>();
     meshGenerator.GenerateMesh(map, squareSize);
@@ -61,11 +75,6 @@ public class MapGenerator3 : MonoBehaviour
     }
 
     System.Random pseudoRandom = new System.Random(seed.GetHashCode());
-
-    bool isInBorder(int x, int y)
-    {
-      return x < xmin || y < ymin || x > xmax || y > ymax;
-    }
 
     for(int x = 0; x < map.GetLength(0); x++)
     {
@@ -99,32 +108,124 @@ public class MapGenerator3 : MonoBehaviour
     }
   }
 
-  int GetSurroundingWallCount(int gridX, int gridY) {
-      int wallCount = 0;
-      for (int neighbourX = gridX - 1; neighbourX <= gridX + 1; neighbourX ++)
+  void DenoiseMap(int tileType, int denoisingThreshold)
+  {
+    List<List<Coord>> regions = GetRegions(tileType);
+
+    foreach(List<Coord> region in regions)
+    {
+      if(region.Count < denoisingThreshold)
       {
-          for (int neighbourY = gridY - 1; neighbourY <= gridY + 1; neighbourY ++)
-          {
-              if (neighbourX >= 0 && neighbourX < width && neighbourY >= 0 && neighbourY < height)
-              {
-                  if (neighbourX != gridX || neighbourY != gridY)
-                  {
-                      wallCount += map[neighbourX,neighbourY];
-                  }
-              }
-              else
-              {
-                  wallCount ++;
-              }
-          }
+        foreach(Coord coord in region)
+        {
+          map[coord.tileX, coord.tileY] = tileType == 1 ? 0 : 1;
+        }
       }
+    }
+  }
+
+  int GetSurroundingWallCount(int gridX, int gridY)
+  {
+    int wallCount = 0;
+    for (int neighbourX = gridX - 1; neighbourX <= gridX + 1; neighbourX ++)
+    {
+      for (int neighbourY = gridY - 1; neighbourY <= gridY + 1; neighbourY ++)
+      {
+        if (isInMap(neighbourX, neighbourY))
+        {
+          if (neighbourX != gridX || neighbourY != gridY)
+          {
+              wallCount += map[neighbourX,neighbourY];
+          }
+        }
+        else
+        {
+          wallCount ++;
+        }
+      }
+    }
 
       return wallCount;
   }
 
-  void OnDrawGizmos()
+  List<List<Coord>> GetRegions(int tileType)
   {
-    // This makes the viewport live, the start method is responsible for the mesh used by the game
-    GenerateMap();
+    List<List<Coord>> regions = new List<List<Coord>>();
+    int[,] mapFlags = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
+
+    for(int x = xmin; x < xmax; x++)
+    {
+      for(int y = ymin; y < ymax; y++)
+      {
+        if(mapFlags[x,y] == 0 && map[x,y] == tileType)
+        {
+          List<Coord> region = GetRegionTiles(x,y);
+          regions.Add(region);
+
+          foreach(Coord coord in region)
+          {
+            mapFlags[coord.tileX, coord.tileY] = 1;
+          }
+        }
+      }
+    }
+
+    return regions;
+  }
+
+  List<Coord> GetRegionTiles(int startX, int startY) //uses flood fill algo
+  {
+    List<Coord> tiles = new List<Coord>();
+    int[,] mapFlags = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
+    int tileType = map[startX, startY];
+
+    Queue<Coord> queue = new Queue<Coord>();
+    queue.Enqueue(new Coord(startX, startY));
+    mapFlags[startX, startY] = 1;
+
+    while(queue.Count > 0)
+    {
+      Coord tile = queue.Dequeue();
+      tiles.Add(tile);
+
+      for (int x = tile.tileX - 1; x < tile.tileX + 1; x ++)
+      {
+        for (int y = tile.tileY - 1; y < tile.tileY + 1; y ++)
+        {
+          if(isInMap(x, y) && (x + y) % 2 != 0)
+          {
+            if(mapFlags[x,y] == 0 && map[x,y] == tileType)
+            {
+              mapFlags[x,y] = 1;
+              queue.Enqueue(new Coord(x,y));
+            }
+          }
+        }
+      }
+    }
+
+    return tiles;
+  }
+
+  bool isInBorder(int x, int y)
+  {
+    return x < xmin || y < ymin || x > xmax || y > ymax;
+  }
+
+  bool isInMap(int x, int y)
+  {
+    return !isInBorder(x, y);
+  }
+
+  struct Coord
+  {
+    public int tileX;
+    public int tileY;
+
+    public Coord(int x, int y)
+    {
+      tileX = x;
+      tileY = y;
+    }
   }
 }
