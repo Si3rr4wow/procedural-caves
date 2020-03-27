@@ -41,7 +41,7 @@ public class MapGenerator3 : MonoBehaviour
   void OnDrawGizmos()
   {
     // This makes the viewport live, the start method is responsible for the mesh used by the game
-    GenerateMap();
+    // GenerateMap();
   }
 
   void Start()
@@ -51,9 +51,9 @@ public class MapGenerator3 : MonoBehaviour
 
   void GenerateMap()
   {
-    xmin = borderWidth + 1;
+    xmin = borderWidth;
     xmax = borderWidth + width - 1;
-    ymin = borderWidth + 1;
+    ymin = borderWidth;
     ymax = borderWidth + height - 1;
 
     map = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
@@ -110,11 +110,13 @@ public class MapGenerator3 : MonoBehaviour
 
   void DenoiseMap(int tileType, int denoisingThreshold)
   {
+
     List<List<Coord>> regions = GetRegions(tileType);
+    Debug.Log("Tile Type " + tileType + " conatins " + regions.Count);
 
     foreach(List<Coord> region in regions)
     {
-      if(region.Count < denoisingThreshold)
+      if(region.Count <= denoisingThreshold)
       {
         foreach(Coord coord in region)
         {
@@ -153,13 +155,14 @@ public class MapGenerator3 : MonoBehaviour
     List<List<Coord>> regions = new List<List<Coord>>();
     int[,] mapFlags = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
 
-    for(int x = xmin; x < xmax; x++)
+    for(int x = 0; x < mapFlags.GetLength(0); x++)
     {
-      for(int y = ymin; y < ymax; y++)
+      for(int y = 0; y < mapFlags.GetLength(1); y++)
       {
         if(mapFlags[x,y] == 0 && map[x,y] == tileType)
         {
           List<Coord> region = GetRegionTiles(x,y);
+          // Debug.Log("region tracked from " + x + "," + y + " is size " + region.Count + " and type " + tileType);
           regions.Add(region);
 
           foreach(Coord coord in region)
@@ -188,14 +191,16 @@ public class MapGenerator3 : MonoBehaviour
       Coord tile = queue.Dequeue();
       tiles.Add(tile);
 
-      for (int x = tile.tileX - 1; x < tile.tileX + 1; x ++)
+      for (int x = tile.tileX - 1; x <= tile.tileX + 1; x ++)
       {
-        for (int y = tile.tileY - 1; y < tile.tileY + 1; y ++)
+        for (int y = tile.tileY - 1; y <= tile.tileY + 1; y ++)
         {
-          if(isInMap(x, y) && (x + y) % 2 != 0)
+          if (isInMap(x,y) && (y == tile.tileY || x == tile.tileX))
           {
+            // Debug.Log("start: " + startX + "," + startY + " progressed to: " + tile.tileX + tile.tileY + " testing neighbor " + x + "," + y);
             if(mapFlags[x,y] == 0 && map[x,y] == tileType)
             {
+              // Debug.Log("adding " + x + "," + y + " to queue from " + startX + "," + startY);
               mapFlags[x,y] = 1;
               queue.Enqueue(new Coord(x,y));
             }
