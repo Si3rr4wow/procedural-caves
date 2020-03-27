@@ -39,9 +39,9 @@ public class MapGenerator3 : MonoBehaviour
 
   void GenerateMap()
   {
-    xmin = borderWidth;
+    xmin = borderWidth + 1;
     xmax = borderWidth + width - 1;
-    ymin = borderWidth;
+    ymin = borderWidth + 1;
     ymax = borderWidth + height - 1;
 
     map = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
@@ -89,7 +89,7 @@ public class MapGenerator3 : MonoBehaviour
     {
       for(int x = xmin; x <= xmax; x++)
       {
-        for(int y = ymin; y < ymax; y++)
+        for(int y = ymin; y <= ymax; y++)
         {
           int surroundingWallCount = GetSurroundingWallCount(x,y);
 
