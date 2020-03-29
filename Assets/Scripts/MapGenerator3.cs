@@ -153,21 +153,22 @@ public class MapGenerator3 : MonoBehaviour
   List<List<Coord>> GetRegions(int tileType)
   {
     List<List<Coord>> regions = new List<List<Coord>>();
-    int[,] mapFlags = new int[(borderWidth * 2) + width, (borderWidth * 2) + height];
+    int[,] mapFlags = new int[width, height];
 
-    for(int x = 0; x < mapFlags.GetLength(0); x++)
+    for(int x = xmin; x <= xmax; x++)
     {
-      for(int y = 0; y < mapFlags.GetLength(1); y++)
+      for(int y = ymin; y <= ymax; y++)
       {
-        if(mapFlags[x,y] == 0 && map[x,y] == tileType)
+        if(mapFlags[x - xmin,y - ymin] == 0 && map[x,y] == tileType)
         {
+          // Debug.Log("Getting Region At " + x +","+y);
           List<Coord> region = GetRegionTiles(x,y);
           // Debug.Log("region tracked from " + x + "," + y + " is size " + region.Count + " and type " + tileType);
           regions.Add(region);
 
           foreach(Coord coord in region)
           {
-            mapFlags[coord.tileX, coord.tileY] = 1;
+            mapFlags[coord.tileX - xmin, coord.tileY - ymin] = 1;
           }
         }
       }
@@ -195,6 +196,7 @@ public class MapGenerator3 : MonoBehaviour
       {
         for (int y = tile.tileY - 1; y <= tile.tileY + 1; y ++)
         {
+          // Debug.Log("is " + x + "," + y + " in map? " + isInMap(x,y));
           if (isInMap(x,y) && (y == tile.tileY || x == tile.tileX))
           {
             // Debug.Log("start: " + startX + "," + startY + " progressed to: " + tile.tileX + tile.tileY + " testing neighbor " + x + "," + y);
