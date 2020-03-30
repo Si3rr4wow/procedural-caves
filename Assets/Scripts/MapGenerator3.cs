@@ -229,12 +229,12 @@ public class MapGenerator3 : MonoBehaviour
   void CreatePassage(Room roomA, Room roomB, Coord tileA, Coord tileB)
   {
     Room.ConnectRooms(roomA, roomB);
-    Debug.DrawLine(CoordToWorldPoint(tileA), CoordToWorldPoint(tileB), Color.green, 100);
+    Debug.DrawLine(CoordToWorldPoint(tileA), CoordToWorldPoint(tileB), Color.green, 5);
   }
 
   Vector3 CoordToWorldPoint(Coord tile)
   {
-    return new Vector3(-width/2f+.5f+tile.tileX,2,-height/2f+0.5f+tile.tileY);
+    return new Vector3(-width / 2f + .5f + tile.tileX - xmin, 10, -height / 2f + 0.5f + tile.tileY - ymin);
   }
 
   int GetSurroundingWallCount(int gridX, int gridY)
@@ -371,10 +371,9 @@ public class MapGenerator3 : MonoBehaviour
         {
           for (int y = tile.tileY - 1; y <= tile.tileY + 1; y ++)
           {
-            if ((y == tile.tileY || x == tile.tileX) && isInMap(x - xmin,y - ymin))
+            if ((y == tile.tileY || x == tile.tileX) && isInMap(x,y))
             {
-              // Debug.Log(x + "," + y);
-              if(map[x - xmin,y - ymin] == 1)
+              if(map[x,y] == 1)
               {
                 edgeTiles.Add(tile);
               }
