@@ -17,7 +17,7 @@ public class MapGenerator3 : MonoBehaviour
   [Range(0,10)]
   public int smoothingAmount;
 
-  [Range(0,10)]
+  [Range(1,10)]
   public int smoothingTolerance;
 
   [Range(0,50)]
@@ -32,6 +32,9 @@ public class MapGenerator3 : MonoBehaviour
   [Range(0,10)]
   public int borderWidth;
 
+  [Range(0,10)]
+  public int passageWidth;
+
   int[,] map;
 
   static int xmin;
@@ -42,7 +45,7 @@ public class MapGenerator3 : MonoBehaviour
   void OnDrawGizmos()
   {
     // This makes the viewport live, the start method is responsible for the mesh used by the game
-    GenerateMap();
+    // GenerateMap();
   }
 
   void Start()
@@ -226,10 +229,85 @@ public class MapGenerator3 : MonoBehaviour
     }
   }
 
+  List<Coord> GetLine(Coord from, Coord to)
+  {
+    List<Coord> line = new List<Coord>();
+
+    int x = from.tileX;
+    int y = from.tileY;
+
+    int dx = to.tileX - from.tileX;
+    int dy = to.tileY - from.tileY;
+
+    int step = Math.Sign(dx);
+    int gradientStep = Math.Sign(dy);
+
+    bool inverted = false;
+    int longest = Mathf.Abs(dx);
+    int shortest = Mathf.Abs(dy);
+
+    if(longest < shortest) {
+      inverted = true;
+      longest = Mathf.Abs(dy);
+      shortest = Mathf.Abs(dx);
+      step = Math.Sign(dy);
+      gradientStep = Math.Sign(dx);
+    }
+
+    int gradientAccumulation = longest / 2;
+    for(int i = 0; i < longest; i++)
+    {
+      line.Add(new Coord(x,y));
+      if(inverted)
+      {
+        y += step;
+      } else {
+        x += step;
+      }
+      gradientAccumulation += shortest;
+      if(gradientAccumulation >= longest)
+      {
+        if(inverted)
+        {
+          x += gradientStep;
+        } else {
+          y += gradientStep;
+        }
+      }
+    }
+
+    return line;
+  }
+
+  void DrawCircle(Coord coord, int radius)
+  {
+    for(int x = -radius; x <= radius; x++)
+    {
+      for(int y = -radius; y <= radius; y++)
+      {
+        if(x*x + y*y <= radius*radius)
+        {
+          int realX = coord.tileX + x;
+          int realY = coord.tileY + y;
+
+          if(isInMap(realX, realY))
+          {
+            map[realX, realY] = 0;
+          }
+        }
+      }
+    }
+  }
+
   void CreatePassage(Room roomA, Room roomB, Coord tileA, Coord tileB)
   {
     Room.ConnectRooms(roomA, roomB);
-    Debug.DrawLine(CoordToWorldPoint(tileA), CoordToWorldPoint(tileB), Color.green, 5);
+
+    List<Coord> line = GetLine(tileA, tileB);
+    foreach(Coord coord in line)
+    {
+      DrawCircle(coord, passageWidth);
+    }
   }
 
   Vector3 CoordToWorldPoint(Coord tile)
